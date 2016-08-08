@@ -17,14 +17,23 @@ defmodule LeakScraper.CLI do
         --first   || -f  => which item ID to begin the scrape from (inclusive)
         --last    || -l  => which item ID to end the scrape on (inclusive)
     """
-    System.halt(0)
+    finish_process
   end
 
   defp process(dataset, first, last) do
-    IO.puts "Scraping #{dataset} entries from #{first} to #{last}"
 
-    # temp, halting system. This will be replaced by a cleanup function in the future.
-    System.halt(0)
+    case dataset do
+      "clinton-emails" ->
+        LeakScraper.ClintonEmails.main(first, last)
+      "dnc-emails" ->
+        IO.puts "dnc emails compatibility coming soon"
+        System.halt(0)
+      _ ->
+        IO.puts "Invalid dataset selection"
+        System.halt(0)
+    end
+
+    finish_process
   end
 
   defp parse_args(args) do
@@ -37,6 +46,11 @@ defmodule LeakScraper.CLI do
       {[dataset: dataset, first: first, last: last], _, _} -> process(dataset, first, last)
       {_,_,_} -> process(:help)
     end
+  end
+
+  defp finish_process do
+    IO.puts "Job done!"
+    System.halt(0)
   end
 
 end
