@@ -30,7 +30,8 @@ defmodule LeakScraper.Mixfile do
   defp deps do
     [
      { :httpoison , "~> 0.9.0" },
-     { :floki , "~> 0.9.0" }
+     { :floki , "~> 0.9.0" },
+     { :poison , "~> 2.0" }
     ]
   end
 end

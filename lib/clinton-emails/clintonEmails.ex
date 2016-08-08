@@ -18,7 +18,6 @@ defmodule LeakScraper.ClintonEmails do
       |> scrape_email
       |> (&prep_data(&1, id)).()
       |> save_data
-      |> IO.inspect
   end
 
   defp build_url(id) do
@@ -47,9 +46,9 @@ defmodule LeakScraper.ClintonEmails do
   end
 
   defp save_data(data) do
-
-    data
-
+    json = Poison.encode!(data)
+    {:ok, file} = File.open("./output/" <> to_string(data[:id]) <> ".json", [:write])
+    IO.binwrite file, json
   end
 
 end
