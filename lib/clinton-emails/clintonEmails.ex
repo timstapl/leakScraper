@@ -1,15 +1,42 @@
 defmodule LeakScraper.ClintonEmails do
 
   def main(first, last) do
-    IO.puts "Scraping from #{first} to #{last}"
     # early stage workflow, overly procedural, just hammering this out
     # currently only using one process, and looping through ids
     # will update this to use the worker model in the future.
-    if first > 0 and last < 30322 do
+
+    setup_file()
+
+    if first > 0 and last <= 30322 do
       first..last
         |> Enum.map(&workflow/1)
     end
 
+    clean_up()
+
+  end
+
+  defp setup_file() do
+    { :ok, file } = File.open "./output/scrape.json", [:write]
+    IO.binwrite file, "["
+    File.close file
+  end
+
+  defp clean_up() do
+    {:ok, body } = File.read "./output/scrape.json"
+    final = String.trim body, ","
+
+    {:ok, file } = File.open "./output/scrape.json", [:write]
+    IO.binwrite file, final <> "]"
+
+    File.close file
+
+    #{ :ok, file } = File.open "./output/scrape.json", [:read, :write]
+    #IO.binread(file, :all)
+    #|> String.trim(",")
+    #|> (&IO.binwrite(file, &1 <> "]")).()
+
+    #File.close file
   end
 
   defp workflow(id) do
@@ -41,14 +68,15 @@ defmodule LeakScraper.ClintonEmails do
       :body         => Floki.find(scrape, "div.email-content") |> Floki.text,
       :raw          => Floki.find(scrape, "div.active") |> Floki.filter_out("h2") |> Floki.raw_html,
       :pdf          => pdf_prefix <> ( Floki.find(scrape, "div.tab-pane > p > a") |> Floki.attribute("href") |> List.first),
-      :attachments  => "todo"
+      #:attachments  => "todo"
     }
   end
 
   defp save_data(data) do
     json = Poison.encode!(data)
-    {:ok, file} = File.open("./output/" <> to_string(data[:id]) <> ".json", [:write])
-    IO.binwrite file, json
+    {:ok, file} = File.open("./output/scrape.json", [:append])
+    IO.binwrite file, json <> ","
+    File.close file
   end
 
 end
