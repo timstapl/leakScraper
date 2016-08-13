@@ -27,23 +27,16 @@ defmodule LeakScraper.ClintonEmails do
     final = String.trim body, ","
 
     {:ok, file } = File.open "./output/scrape.json", [:write]
-    IO.binwrite file, final <> "]"
+    IO.binwrite file, "#{final}]"
 
     File.close file
-
-    #{ :ok, file } = File.open "./output/scrape.json", [:read, :write]
-    #IO.binread(file, :all)
-    #|> String.trim(",")
-    #|> (&IO.binwrite(file, &1 <> "]")).()
-
-    #File.close file
   end
 
   defp workflow(id) do
     id
       |> build_url
       |> scrape_email
-      |> (&prep_data(&1, id)).()
+      |> prep_data(id)
       |> save_data
   end
 
@@ -52,7 +45,14 @@ defmodule LeakScraper.ClintonEmails do
   end
 
   defp scrape_email(url) do
-    HTTPoison.get!(url).body
+    case HTTPoison.get url do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        IO.puts "Email retrieved: #{url}"
+        body
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        IO.inspect reason
+        scrape_email url
+    end
   end
 
   defp prep_data(scrape, id) do
@@ -68,14 +68,13 @@ defmodule LeakScraper.ClintonEmails do
       :body         => Floki.find(scrape, "div.email-content") |> Floki.text,
       :raw          => Floki.find(scrape, "div.active") |> Floki.filter_out("h2") |> Floki.raw_html,
       :pdf          => pdf_prefix <> ( Floki.find(scrape, "div.tab-pane > p > a") |> Floki.attribute("href") |> List.first),
-      #:attachments  => "todo"
     }
   end
 
   defp save_data(data) do
     json = Poison.encode!(data)
     {:ok, file} = File.open("./output/scrape.json", [:append])
-    IO.binwrite file, json <> ","
+    IO.binwrite file, "#{json},"
     File.close file
   end
 
